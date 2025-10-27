@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Player } from '../../models/player';
+import { environment } from '@env/environment';
 
 interface PlayerApi {
   id: number;
@@ -19,7 +20,7 @@ interface PlayerApiResponse {
 
 @Injectable({ providedIn: 'root' })
 export class PlayerService {
-  private apiUrl = 'http://localhost:3000/api/players';
+  private apiUrl = environment.playersApiUrl;
 
   constructor(private http: HttpClient) {}
 

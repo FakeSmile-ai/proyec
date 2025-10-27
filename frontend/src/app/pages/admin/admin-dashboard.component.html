@@ -57,93 +57,182 @@
     <!-- Acciones rápidas -->
     <section class="quick-actions">
       <a class="qa pill" routerLink="/tournaments"><mat-icon>add_circle</mat-icon> Crear torneo</a>
-      <a class="qa pill" [routerLink]="['/control', (matchId || 1)]"><mat-icon>sports</mat-icon> Nuevo partido</a>
+      <a class="qa pill" [routerLink]="['/control', (matchId ?? 1)]"><mat-icon>sports</mat-icon> Nuevo partido</a>
       <a class="qa pill" routerLink="/players/create"><mat-icon>person_add</mat-icon> Nuevo jugador</a>
     </section>
 
     <!-- GRID PRINCIPAL -->
     <section class="dashboard-grid">
 
-      <!-- Tarjetas de navegación (tus cards, con estilo nuevo) -->
-      <div class="cards">
-        <a class="card" [routerLink]="['/score', (matchId || 1)]">
-          <div class="icon"><mat-icon>query_stats</mat-icon></div>
-          <div class="meta">
-            <h3 class="title">Scoreboard</h3>
-            <p class="desc">Ver marcador en vivo</p>
-          </div>
-          <div class="chev">›</div>
-        </a>
+      <div class="main-column">
+        <div class="panel schedule-card">
+          <header>Programar partido</header>
+          <form class="schedule-form" [formGroup]="scheduleForm" (ngSubmit)="programar()">
+            <div class="field">
+              <label for="homeTeam">Equipo local</label>
+              <select id="homeTeam" formControlName="homeTeamId" [disabled]="loadingTeams()">
+                <option [ngValue]="null" disabled>Selecciona un equipo</option>
+                <option *ngFor="let team of teams()" [ngValue]="team.id">{{ team.name }}</option>
+              </select>
+            </div>
 
-        <a class="card" [routerLink]="['/control', matchId]">
-          <div class="icon"><mat-icon>tune</mat-icon></div>
-          <div class="meta">
-            <h3 class="title">Control</h3>
-            <p class="desc">Panel del operador</p>
-          </div>
-          <div class="chev">›</div>
-        </a>
+            <div class="field">
+              <label for="awayTeam">Equipo visitante</label>
+              <select id="awayTeam" formControlName="awayTeamId" [disabled]="loadingTeams()">
+                <option [ngValue]="null" disabled>Selecciona un equipo</option>
+                <option *ngFor="let team of teams()" [ngValue]="team.id">{{ team.name }}</option>
+              </select>
+            </div>
 
-        <a class="card" routerLink="/players">
-          <div class="icon"><mat-icon>group</mat-icon></div>
-          <div class="meta">
-            <h3 class="title">Players</h3>
-            <p class="desc">Gestiona el plantel</p>
-          </div>
-          <div class="chev">›</div>
-        </a>
+            <div class="field">
+              <label for="dateMatch">Fecha y hora</label>
+              <input id="dateMatch" type="datetime-local" formControlName="dateMatchLocal">
+            </div>
 
-        <a class="card" routerLink="/teams">
-          <div class="icon"><mat-icon>sports_basketball</mat-icon></div>
-          <div class="meta">
-            <h3 class="title">Teams</h3>
-            <p class="desc">Crea y edita equipos</p>
-          </div>
-          <div class="chev">›</div>
-        </a>
+            <div class="field">
+              <label for="quarterDuration">Duración del cuarto (segundos)</label>
+              <input id="quarterDuration" type="number" min="60" step="30" formControlName="quarterDurationSeconds">
+            </div>
 
-        <a class="card" routerLink="/tournaments">
-          <div class="icon"><mat-icon>emoji_events</mat-icon></div>
-          <div class="meta">
-            <h3 class="title">Tournaments</h3>
-            <p class="desc">Programa y administra partidos</p>
-          </div>
-          <div class="chev">›</div>
-        </a>
+            <div class="field action-field">
+              <button type="submit" [disabled]="scheduleDisabled">
+                {{ scheduling() ? 'Programando…' : 'Programar' }}
+              </button>
+            </div>
+          </form>
+          <p class="form-hint" *ngIf="sameTeamsSelected">Los equipos deben ser diferentes.</p>
+          <p class="form-hint" *ngIf="loadingTeams()">Cargando equipos…</p>
+        </div>
 
-        <a class="card" routerLink="/reports">
-          <div class="icon"><mat-icon>picture_as_pdf</mat-icon></div>
-          <div class="meta">
-            <h3 class="title">Reports</h3>
-            <p class="desc">PDFs de equipos, jugadores y partidos</p>
+        <div class="panel upcoming-panel">
+          <header>Próximos partidos</header>
+          <div class="upcoming-actions">
+            <button type="button" (click)="refreshUpcoming()" [disabled]="loadingUpcoming()">
+              {{ loadingUpcoming() ? 'Actualizando…' : 'Actualizar' }}
+            </button>
           </div>
-          <div class="chev">›</div>
-        </a>
+          <ng-container *ngIf="!loadingUpcoming(); else upcomingLoading">
+            <div class="table-wrap" *ngIf="upcoming().length > 0; else noUpcoming">
+              <table class="upcoming-table">
+                <thead>
+                  <tr>
+                    <th>Fecha (local)</th>
+                    <th>Local</th>
+                    <th>Visita</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let match of upcoming(); trackBy: trackMatch">
+                    <td>{{ formatLocal(match.dateMatch) }}</td>
+                    <td>{{ displayHome(match) }}</td>
+                    <td>{{ displayAway(match) }}</td>
+                    <td>{{ match.status || '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </ng-container>
+          <ng-template #upcomingLoading>
+            <div class="table-placeholder">Cargando próximos partidos…</div>
+          </ng-template>
+          <ng-template #noUpcoming>
+            <div class="table-placeholder">No hay partidos programados todavía.</div>
+          </ng-template>
+        </div>
+
+        <div class="cards">
+          <a class="card" [routerLink]="['/score', (matchId ?? 1)]">
+            <div class="icon"><mat-icon>query_stats</mat-icon></div>
+            <div class="meta">
+              <h3 class="title">Scoreboard</h3>
+              <p class="desc">Ver marcador en vivo</p>
+            </div>
+            <div class="chev">›</div>
+          </a>
+
+          <a class="card" [routerLink]="['/control', (matchId ?? 1)]">
+            <div class="icon"><mat-icon>tune</mat-icon></div>
+            <div class="meta">
+              <h3 class="title">Control</h3>
+              <p class="desc">Panel del operador</p>
+            </div>
+            <div class="chev">›</div>
+          </a>
+
+          <a class="card" routerLink="/players">
+            <div class="icon"><mat-icon>group</mat-icon></div>
+            <div class="meta">
+              <h3 class="title">Players</h3>
+              <p class="desc">Gestiona el plantel</p>
+            </div>
+            <div class="chev">›</div>
+          </a>
+
+          <a class="card" routerLink="/teams">
+            <div class="icon"><mat-icon>sports_basketball</mat-icon></div>
+            <div class="meta">
+              <h3 class="title">Teams</h3>
+              <p class="desc">Crea y edita equipos</p>
+            </div>
+            <div class="chev">›</div>
+          </a>
+
+          <a class="card" routerLink="/tournaments">
+            <div class="icon"><mat-icon>emoji_events</mat-icon></div>
+            <div class="meta">
+              <h3 class="title">Tournaments</h3>
+              <p class="desc">Programa y administra partidos</p>
+            </div>
+            <div class="chev">›</div>
+          </a>
+
+          <a class="card" routerLink="/reports">
+            <div class="icon"><mat-icon>picture_as_pdf</mat-icon></div>
+            <div class="meta">
+              <h3 class="title">Reports</h3>
+              <p class="desc">PDFs de equipos, jugadores y partidos</p>
+            </div>
+            <div class="chev">›</div>
+          </a>
+        </div>
       </div>
 
-      <!-- Agenda compacta -->
-      <div class="panel agenda">
-        <header>Agenda</header>
-        <ul class="agenda-list">
-          <li><span class="date">Hoy 19:00</span><span class="txt">Equipo A vs Equipo B</span><a [routerLink]="['/control', (matchId || 1)]">Ver</a></li>
-          <li><span class="date">Mañana 18:30</span><span class="txt">Equipo C vs Equipo D</span><a routerLink="/tournaments">Detalle</a></li>
-          <li><span class="date">Vie 20:00</span><span class="txt">Semifinal</span><a routerLink="/tournaments">Detalle</a></li>
-        </ul>
-      </div>
+      <div class="side-column">
+        <div class="panel agenda">
+          <header>Agenda rápida</header>
+          <ul class="agenda-list">
+            <li *ngIf="loadingUpcoming()">
+              <span class="date">…</span>
+              <span class="txt">Actualizando agenda</span>
+              <span></span>
+            </li>
+            <li *ngFor="let row of upcoming() | slice:0:3">
+              <span class="date">{{ shortLocal(row.dateMatch) }}</span>
+              <span class="txt">{{ displayHome(row) }} vs {{ displayAway(row) }}</span>
+              <a [routerLink]="['/control', row.id]">Abrir</a>
+            </li>
+            <li *ngIf="!loadingUpcoming() && upcoming().length === 0">
+              <span class="date">—</span>
+              <span class="txt">No hay partidos programados.</span>
+              <span></span>
+            </li>
+          </ul>
+        </div>
 
-      <!-- Gráfico placeholder (SVG, cero dependencias) -->
-      <div class="panel chart">
-        <header>Actividad</header>
-        <svg viewBox="0 0 300 100" preserveAspectRatio="none" class="spark">
-          <polyline fill="none" stroke="url(#g)" stroke-width="3"
-            points="0,70 30,65 60,72 90,50 120,55 150,38 180,45 210,30 240,35 270,20 300,25"/>
-          <defs>
-            <linearGradient id="g" x1="0" x2="1">
-              <stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#8b5cf6"/>
-            </linearGradient>
-          </defs>
-        </svg>
-        <p class="chart-note">Tendencia semanal (placeholder)</p>
+        <div class="panel chart">
+          <header>Actividad</header>
+          <svg viewBox="0 0 300 100" preserveAspectRatio="none" class="spark">
+            <polyline fill="none" stroke="url(#g)" stroke-width="3"
+              points="0,70 30,65 60,72 90,50 120,55 150,38 180,45 210,30 240,35 270,20 300,25"/>
+            <defs>
+              <linearGradient id="g" x1="0" x2="1">
+                <stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#8b5cf6"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <p class="chart-note">Tendencia semanal (placeholder)</p>
+        </div>
       </div>
 
     </section>
