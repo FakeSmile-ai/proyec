@@ -3,13 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Team } from '../../models/team';
+import { environment } from '@env/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TeamService {
   // ✅ ahora apunta al endpoint correcto del backend
-  private apiUrl = 'http://localhost:8082/api/teams';
+  private apiUrl = environment.teamsApiUrl;
 
   constructor(private http: HttpClient) {}
 
