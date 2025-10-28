@@ -22,10 +22,13 @@ namespace MatchesService.Data
             {
                 e.Property(p => p.Status).HasMaxLength(32);
                 e.Property(p => p.QuarterDurationSeconds).HasDefaultValue(600);
+                e.Property(p => p.DateMatchUtc)
+                    .HasColumnName("DateMatchUtc")
+                    .IsRequired();
 
                 // Índices útiles
-                e.HasIndex(p => p.DateMatch);
-                e.HasIndex(p => new { p.Status, p.DateMatch });
+                e.HasIndex(p => p.DateMatchUtc);
+                e.HasIndex(p => new { p.Status, p.DateMatchUtc });
 
                 // Checks de dominio
                 e.ToTable(tb =>

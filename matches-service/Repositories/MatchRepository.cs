@@ -24,13 +24,13 @@ namespace MatchesService.Repositories
                 query = query.Where(m => m.HomeTeamId == teamId || m.AwayTeamId == teamId);
 
             if (from.HasValue)
-                query = query.Where(m => m.DateMatch >= from.Value);
+                query = query.Where(m => m.DateMatchUtc >= from.Value);
 
             if (to.HasValue)
-                query = query.Where(m => m.DateMatch <= to.Value);
+                query = query.Where(m => m.DateMatchUtc <= to.Value);
 
             return await query
-                .OrderByDescending(m => m.DateMatch)
+                .OrderByDescending(m => m.DateMatchUtc)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -47,10 +47,10 @@ namespace MatchesService.Repositories
                 query = query.Where(m => m.HomeTeamId == teamId || m.AwayTeamId == teamId);
 
             if (from.HasValue)
-                query = query.Where(m => m.DateMatch >= from.Value);
+                query = query.Where(m => m.DateMatchUtc >= from.Value);
 
             if (to.HasValue)
-                query = query.Where(m => m.DateMatch <= to.Value);
+                query = query.Where(m => m.DateMatchUtc <= to.Value);
 
             return await query.CountAsync();
         }
@@ -68,8 +68,8 @@ namespace MatchesService.Repositories
         {
             var nowUtc = DateTime.UtcNow;
             return await _context.Matches.AsNoTracking()
-                .Where(m => m.Status == "Scheduled" && m.DateMatch > nowUtc)
-                .OrderBy(m => m.DateMatch)
+                .Where(m => m.Status == "Scheduled" && m.DateMatchUtc > nowUtc)
+                .OrderBy(m => m.DateMatchUtc)
                 .Take(10)
                 .ToListAsync();
         }
@@ -77,8 +77,8 @@ namespace MatchesService.Repositories
         public async Task<IEnumerable<Match>> GetByRangeAsync(DateTime from, DateTime to)
         {
             return await _context.Matches.AsNoTracking()
-                .Where(m => m.DateMatch >= from && m.DateMatch <= to)
-                .OrderBy(m => m.DateMatch)
+                .Where(m => m.DateMatchUtc >= from && m.DateMatchUtc <= to)
+                .OrderBy(m => m.DateMatchUtc)
                 .ToListAsync();
         }
 

@@ -81,7 +81,7 @@ namespace MatchesService.Services
             {
                 match.Id,
                 match.Status,
-                match.DateMatch,
+                DateMatch = match.DateMatchUtc,
                 match.HomeTeamId,
                 match.AwayTeamId,
                 match.HomeScore,
@@ -109,27 +109,45 @@ namespace MatchesService.Services
         {
             try
             {
+                if (dto.HomeTeamId == dto.AwayTeamId)
+                    return (false, "Los equipos deben ser distintos.", null);
+
                 var homeExists = await _http.GetAsync($"{_teamsApiBase}/{dto.HomeTeamId}");
                 var awayExists = await _http.GetAsync($"{_teamsApiBase}/{dto.AwayTeamId}");
                 if (!homeExists.IsSuccessStatusCode || !awayExists.IsSuccessStatusCode)
                     return (false, "Uno o ambos equipos no existen en teams-service", null);
 
+                var whenUtc = dto.DateMatch.Kind == DateTimeKind.Utc
+                    ? dto.DateMatch
+                    : DateTime.SpecifyKind(dto.DateMatch, DateTimeKind.Local).ToUniversalTime();
+
                 var match = new Match
                 {
                     HomeTeamId = dto.HomeTeamId,
                     AwayTeamId = dto.AwayTeamId,
-                    DateMatch = dto.DateMatch,
+                    DateMatchUtc = whenUtc,
                     QuarterDurationSeconds = dto.QuarterDurationSeconds ?? 600,
                     Status = "Scheduled"
                 };
 
                 await _repo.AddAsync(match);
                 await _repo.SaveChangesAsync();
-                return (true, null, match);
+                return (true, null, new
+                {
+                    match.Id,
+                    match.Status,
+                    DateMatch = match.DateMatchUtc,
+                    match.HomeTeamId,
+                    match.AwayTeamId,
+                    match.QuarterDurationSeconds
+                });
             }
             catch (Exception ex)
             {
-                return (false, ex.Message, null);
+                var error = ex.InnerException != null
+                    ? $"{ex.Message} :: {ex.InnerException.Message}"
+                    : ex.Message;
+                return (false, error, null);
             }
         }
 
@@ -138,7 +156,9 @@ namespace MatchesService.Services
             var match = await _repo.GetByIdAsync(id);
             if (match == null) return (false, "Partido no encontrado", null);
 
-            match.DateMatch = dto.NewDate;
+            match.DateMatchUtc = dto.NewDate.Kind == DateTimeKind.Utc
+                ? dto.NewDate
+                : DateTime.SpecifyKind(dto.NewDate, DateTimeKind.Local).ToUniversalTime();
             match.Status = "Rescheduled";
 
             await _repo.UpdateAsync(match);
