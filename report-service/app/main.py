@@ -6,7 +6,7 @@ import os
 from typing import Any, Optional
 
 import httpx
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, Query
+from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Request, Query
 from fastapi.responses import JSONResponse, StreamingResponse
 from jose import JWTError, jwt
 
@@ -14,6 +14,7 @@ from . import clients, pdf_utils
 from .aggregators import teams_map, match_roster, aggregate_stats_from_matches
 
 app = FastAPI()
+api_router = APIRouter(prefix="/api")
 
 AUTH_SECRET = os.getenv("AUTH_SECRET", "change_me")
 ALGO = "HS256"
@@ -33,6 +34,7 @@ async def require_admin(authorization: str | None = Header(default=None)) -> Non
 
 # ---------- Health ----------
 @app.get("/health")
+@api_router.get("/health")
 async def health():
     return {"status":"ok","service":"report-service","port":os.getenv("SERVICE_PORT","8080")}
 
@@ -45,6 +47,7 @@ def _upstream_502(e: httpx.HTTPStatusError) -> HTTPException:
 
 # Equipos
 @app.get("/reports/teams.pdf", dependencies=[Depends(require_admin)])
+@api_router.get("/reports/teams.pdf", dependencies=[Depends(require_admin)])
 async def report_teams(
     x_api_authorization: str | None = Header(default=None, alias="X-Api-Authorization"),
     x_teams_authorization: str | None = Header(default=None, alias="X-Teams-Authorization"),
@@ -58,6 +61,7 @@ async def report_teams(
 
 # Jugadores por equipo
 @app.get("/reports/teams/{team_id}/players.pdf", dependencies=[Depends(require_admin)])
+@api_router.get("/reports/teams/{team_id}/players.pdf", dependencies=[Depends(require_admin)])
 async def report_players_by_team(
     team_id: str,
     x_api_authorization: str | None = Header(default=None, alias="X-Api-Authorization"),
@@ -76,6 +80,7 @@ async def report_players_by_team(
 
 # Todos los jugadores
 @app.get("/reports/players/all.pdf", dependencies=[Depends(require_admin)])
+@api_router.get("/reports/players/all.pdf", dependencies=[Depends(require_admin)])
 async def report_all_players(
     x_api_authorization: str | None = Header(default=None, alias="X-Api-Authorization"),
     x_players_authorization: str | None = Header(default=None, alias="X-Players-Authorization"),
@@ -91,6 +96,7 @@ async def report_all_players(
 
 # Historial de partidos
 @app.get("/reports/matches/history.pdf", dependencies=[Depends(require_admin)])
+@api_router.get("/reports/matches/history.pdf", dependencies=[Depends(require_admin)])
 async def report_history(
     from_: str | None = Query(default=None, alias="from"),
     to: str | None = None,
@@ -108,6 +114,7 @@ async def report_history(
 
 # Roster de un partido
 @app.get("/reports/matches/{match_id}/roster.pdf", dependencies=[Depends(require_admin)])
+@api_router.get("/reports/matches/{match_id}/roster.pdf", dependencies=[Depends(require_admin)])
 async def report_match_roster_pdf(
     match_id: str,
     x_api_authorization: str | None = Header(default=None, alias="X-Api-Authorization"),
@@ -124,6 +131,7 @@ async def report_match_roster_pdf(
 
 # Standings / Stats resumen (derivado de matches)
 @app.get("/reports/stats/summary.pdf", dependencies=[Depends(require_admin)])
+@api_router.get("/reports/stats/summary.pdf", dependencies=[Depends(require_admin)])
 async def report_stats_summary(
     x_api_authorization: str | None = Header(default=None, alias="X-Api-Authorization"),
     x_matches_authorization: str | None = Header(default=None, alias="X-Matches-Authorization"),
@@ -174,3 +182,5 @@ async def report_stats_summary(
 @app.exception_handler(httpx.RequestError)
 async def httpx_request_error_handler(_req: Request, exc: httpx.RequestError):
     return JSONResponse(status_code=502, content={"detail": {"message": str(exc)}})
+
+app.include_router(api_router)

@@ -1,10 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '@env/environment';
 
 @Injectable({ providedIn: 'root' })
 export class ReportsService {
   private http = inject(HttpClient);
+  private base = environment.reportsApiUrl;
 
 
   private authHeaders(): HttpHeaders {
@@ -13,21 +15,21 @@ export class ReportsService {
   }
 
   downloadStandings(): Observable<Blob> {
-    return this.http.get('/api/reports/standings.pdf', {
+    return this.http.get(`${this.base}/standings.pdf`, {
       responseType: 'blob',
       headers: this.authHeaders(),
     });
   }
 
   downloadTeams(): Observable<Blob> {
-    return this.http.get('/api/reports/teams.pdf', {
+    return this.http.get(`${this.base}/teams.pdf`, {
       responseType: 'blob',
       headers: this.authHeaders(),
     });
   }
 
   downloadPlayersByTeam(teamId: number): Observable<Blob> {
-    return this.http.get(`/api/reports/teams/${teamId}/players.pdf`, {
+    return this.http.get(`${this.base}/teams/${teamId}/players.pdf`, {
       responseType: 'blob',
       headers: this.authHeaders(),
     });
@@ -38,7 +40,7 @@ export class ReportsService {
     if (params.from) httpParams = httpParams.set('from', params.from);
     if (params.to) httpParams = httpParams.set('to', params.to);
 
-    return this.http.get('/api/reports/matches/history.pdf', {
+    return this.http.get(`${this.base}/matches/history.pdf`, {
       responseType: 'blob',
       params: httpParams,
       headers: this.authHeaders(),
@@ -46,7 +48,7 @@ export class ReportsService {
   }
 
   downloadMatchRoster(matchId: number): Observable<Blob> {
-    return this.http.get(`/api/reports/matches/${matchId}/roster.pdf`, {
+    return this.http.get(`${this.base}/matches/${matchId}/roster.pdf`, {
       responseType: 'blob',
       headers: this.authHeaders(),
     });
@@ -54,14 +56,14 @@ export class ReportsService {
 
   // NUEVOS
   downloadAllPlayers(): Observable<Blob> {
-    return this.http.get('/api/reports/players/all.pdf', {
+    return this.http.get(`${this.base}/players/all.pdf`, {
       responseType: 'blob',
       headers: this.authHeaders(),
     });
   }
 
   downloadStatsSummary(): Observable<Blob> {
-    return this.http.get('/api/reports/stats/summary.pdf', {
+    return this.http.get(`${this.base}/stats/summary.pdf`, {
       responseType: 'blob',
       headers: this.authHeaders(),
     });

@@ -1,5 +1,5 @@
 {
-  "/api": {
+  "/api/auth": {
     "target": "http://localhost:5000",
     "secure": false,
     "changeOrigin": true
@@ -10,7 +10,12 @@
     "changeOrigin": true
   },
   "/api/players": {
-    "target": "http://localhost:3001",
+    "target": "http://localhost:3000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/matches": {
+    "target": "http://localhost:5002",
     "secure": false,
     "changeOrigin": true
   },
@@ -20,7 +25,13 @@
     "changeOrigin": true
   },
   "/api/reports": {
-    "target": "http://localhost:5004",
+    "target": "http://localhost:8084",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/hub/score": {
+    "target": "http://localhost:5002",
+    "ws": true,
     "secure": false,
     "changeOrigin": true
   },

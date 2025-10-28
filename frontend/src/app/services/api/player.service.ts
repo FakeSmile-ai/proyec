@@ -87,7 +87,7 @@ export class PlayerService {
   // ✅ Obtener jugadores por equipo
   getByTeam(teamId: number): Observable<Player[]> {
     return this.http
-      .get<PlayerApiResponse>(`/api/teams/${teamId}/players`)
+      .get<PlayerApiResponse>(`${environment.teamsApiUrl}/${teamId}/players`)
       .pipe(map(res => res.items.map(r => this.fromApi(r))));
   }
 }

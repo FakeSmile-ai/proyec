@@ -5,7 +5,7 @@ using TournamentService.Services; // <-- La directiva using que faltaba o era in
 namespace TournamentService.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/tournaments")]
 public class TournamentController : ControllerBase
 {
     private readonly TeamsServiceHttpClient _teamsServiceClient;

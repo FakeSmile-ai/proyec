@@ -2,6 +2,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '@env/environment';
 import {
   TournamentSummary,
   TournamentViewModel,
@@ -11,18 +12,17 @@ import {
 @Injectable({ providedIn: 'root' })
 export class TournamentsApiService {
   private readonly http = inject(HttpClient);
-  // Usa el proxy dev ya configurado (proxy.conf.json) => http://localhost:5220
-  private readonly base = '/api';
+  private readonly base = environment.tournamentsApiUrl;
 
   listTournaments(): Promise<TournamentSummary[]> {
     return firstValueFrom(
-      this.http.get<TournamentSummary[]>(`${this.base}/tournaments`)
+      this.http.get<TournamentSummary[]>(this.base)
     );
   }
 
   getTournament(id: string): Promise<TournamentViewModel> {
     return firstValueFrom(
-      this.http.get<TournamentViewModel>(`${this.base}/tournaments/${id}`)
+      this.http.get<TournamentViewModel>(`${this.base}/${id}`)
     );
   }
 
@@ -33,7 +33,7 @@ export class TournamentsApiService {
   ): Promise<TournamentViewModel> {
     return firstValueFrom(
       this.http.patch<TournamentViewModel>(
-        `${this.base}/tournaments/${tournamentId}/matches/${matchId}`,
+        `${this.base}/${tournamentId}/matches/${matchId}`,
         payload
       )
     );
