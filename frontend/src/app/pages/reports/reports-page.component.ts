@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ReportsService } from '@app/services/api/reports.service';
+import { environment } from '@env/environment';
 
 type Team = { id: number; name: string };
 
@@ -33,7 +34,7 @@ export class ReportsPage {
 
   private loadTeams() {
     this.loadingTeams.set(true);
-    this.http.get<any>('/api/teams').subscribe({
+    this.http.get<any>(environment.teamsApiUrl).subscribe({
       next: (res) => {
         const items: Team[] = Array.isArray(res?.items) ? res.items : (res ?? []);
         this.teams.set(items);

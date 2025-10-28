@@ -1,10 +1,12 @@
 import { Injectable, signal } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
+import { environment } from '@env/environment';
 
 @Injectable({ providedIn: 'root' })
 export class RealtimeService {
   private hub?: signalR.HubConnection;
   private tick?: any;
+  private readonly hubBase = environment.matchesHubUrl;
 
   private readonly isBrowser =
     typeof window !== 'undefined' && typeof document !== 'undefined';
@@ -146,8 +148,9 @@ export class RealtimeService {
     if (!this.isBrowser) return;
     if (this.hub) return;
 
+    const hubUrl = `${this.hubBase}?matchId=${matchId}`;
     this.hub = new signalR.HubConnectionBuilder()
-      .withUrl(`/hubs/score?matchId=${matchId}`)
+      .withUrl(hubUrl)
       .withAutomaticReconnect()
       .build();
 
