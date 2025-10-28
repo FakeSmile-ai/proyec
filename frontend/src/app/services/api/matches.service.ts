@@ -1,15 +1,16 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
+import { environment } from '@env/environment';
 
 /* =========================
    DTOs / Tipos de intercambio
    ========================= */
 export interface ScheduleMatchDto {
   homeTeamId: number;
-  awayTeamId: number;                 // 👈 FALTABA
-  dateMatchUtc: string;               // ISO UTC
-  quarterDurationSeconds: number;     // p.ej. 600
+  awayTeamId: number;
+  dateMatch: string;               // ISO UTC
+  quarterDurationSeconds: number;  // p.ej. 600
   homeRosterPlayerIds?: number[];
   awayRosterPlayerIds?: number[];
 }
@@ -18,6 +19,8 @@ export interface MatchListItem {
   id: number;
   dateMatch: string | null; // ISO
   status: string;
+  homeTeamId?: number;
+  awayTeamId?: number;
   homeTeam: string;
   awayTeam: string;
   homeScore: number;
@@ -82,16 +85,17 @@ export interface AdjustFoulDto {
 
 @Injectable({ providedIn: 'root' })
 export class MatchesService {
-  // Si no usas proxy, cambia a 'http://localhost:5003/api/matches'
-  private base = '/api/matches';
+  private base = environment.matchesApiUrl;
 
   constructor(private http: HttpClient) {}
 
   /* -----------------------
      Programación y listados
      ----------------------- */
-  programar(dto: ScheduleMatchDto): Observable<{ matchId: number }> {
-    return this.http.post<{ matchId: number }>(`${this.base}/programar`, dto);
+  programar(dto: ScheduleMatchDto): Observable<MatchListItem> {
+    return this.http.post<any>(`${this.base}/programar`, dto).pipe(
+      map(resp => this.mapToListItem(resp))
+    );
   }
 
   list(params?: {
@@ -111,18 +115,29 @@ export class MatchesService {
     if (params?.toUtc) p.set('to', params.toUtc);
 
     return this.http.get<any>(`${this.base}/list?${p.toString()}`).pipe(
-      map(resp => ({
-        items: (resp.items ?? []).map((m: any) => this.mapToListItem(m)),
-        total: resp.total ?? 0,
-        page: resp.page ?? 1,
-        pageSize: resp.pageSize ?? (resp.items?.length ?? 0),
-      }))
+      map(resp => {
+        const rawItems = Array.isArray(resp?.items)
+          ? resp.items
+          : Array.isArray(resp?.data)
+            ? resp.data
+            : [];
+
+        return {
+          items: rawItems.map((m: any) => this.mapToListItem(m)),
+          total: resp?.total ?? resp?.totalCount ?? rawItems.length,
+          page: resp?.page ?? 1,
+          pageSize: resp?.pageSize ?? rawItems.length,
+        } as PaginatedMatches;
+      })
     );
   }
 
   proximos(): Observable<MatchListItem[]> {
-    return this.http.get<any[]>(`${this.base}/proximos`).pipe(
-      map(arr => (arr ?? []).map(m => this.mapToListItem(m)))
+    return this.http.get<any>(`${this.base}/proximos`).pipe(
+      map(resp => {
+        const arr = Array.isArray(resp) ? resp : resp?.data ?? [];
+        return (arr ?? []).map((m: any) => this.mapToListItem(m));
+      })
     );
   }
 
@@ -211,16 +226,36 @@ export class MatchesService {
      Mapper backend -> UI
      ---------------------- */
   private mapToListItem(m: any): MatchListItem {
+    const homeTeam = this.extractTeamName(m.homeTeam) ?? m.homeTeamName ?? m.homeTeam ?? '';
+    const awayTeam = this.extractTeamName(m.awayTeam) ?? m.awayTeamName ?? m.awayTeam ?? '';
+    const homeTeamId = m.homeTeamId ?? m.homeTeamID ?? m.home_id ?? undefined;
+    const awayTeamId = m.awayTeamId ?? m.awayTeamID ?? m.away_id ?? undefined;
+
     return {
       id: m.id,
       dateMatch: m.dateMatchUtc ?? m.dateMatch ?? null,
       status: m.status ?? '',
-      homeTeam: m.homeTeam ?? m.homeTeamName ?? '',
-      awayTeam: m.awayTeam ?? m.awayTeamName ?? '',
+      homeTeamId,
+      awayTeamId,
+      homeTeam: typeof homeTeam === 'string' && homeTeam.trim().length > 0
+        ? homeTeam
+        : homeTeamId ? `Equipo #${homeTeamId}` : '',
+      awayTeam: typeof awayTeam === 'string' && awayTeam.trim().length > 0
+        ? awayTeam
+        : awayTeamId ? `Equipo #${awayTeamId}` : '',
       homeScore: m.homeScore ?? 0,
       awayScore: m.awayScore ?? 0,
       homeFouls: m.homeFouls ?? 0,
       awayFouls: m.awayFouls ?? 0,
     };
+  }
+
+  private extractTeamName(raw: any): string | undefined {
+    if (!raw) return undefined;
+    if (typeof raw === 'string') return raw;
+    if (typeof raw === 'object') {
+      return raw.name ?? raw.Name ?? raw.title ?? undefined;
+    }
+    return undefined;
   }
 }
