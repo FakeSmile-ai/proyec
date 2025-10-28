@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MatchesService.Data;
 using MatchesService.Repositories;
