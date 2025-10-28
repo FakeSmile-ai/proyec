@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
 
 namespace MatchesService.Models
 {
@@ -24,7 +26,9 @@ namespace MatchesService.Models
         [Required, MaxLength(32)]
         public string Status { get; set; } = "Scheduled";
 
-        public DateTime DateMatch { get; set; }
+        [JsonProperty("dateMatch")]
+        [Column("DateMatchUtc")]
+        public DateTime DateMatchUtc { get; set; }
 
         [Range(60, 7200)]
         public int QuarterDurationSeconds { get; set; } = 600;

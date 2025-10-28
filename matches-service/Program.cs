@@ -19,6 +19,8 @@ builder.Services.AddControllers()
         options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
     });
 
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -41,6 +43,8 @@ builder.Services.AddSignalR();
 
 // HttpClient externo
 builder.Services.AddHttpClient();
+
+builder.Logging.AddConsole();
 
 var app = builder.Build();
 
